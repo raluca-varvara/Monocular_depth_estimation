@@ -1,0 +1,4 @@
+DATASET:
+  DATASET: 'indoor_monocular'
+  ROOT: '/Users/varvararaluca/Documents/Datasets/nyu_data/'
+  METADATA : 'metadata.csv'
