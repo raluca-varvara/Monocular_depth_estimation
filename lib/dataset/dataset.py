@@ -26,7 +26,8 @@ class BaseDataset(data.Dataset):
                  std_depth=[0.154],
                  random_flip = True,
                  multiscale=True,
-                 multiscale_factor=1.5):
+                 multiscale_factor=1.5,
+                 preproc_valid = False):
 
         self.base_size = base_size
         self.crop_size = crop_size
@@ -44,6 +45,8 @@ class BaseDataset(data.Dataset):
         self.mini_train = mini_train
 
         self.stage = stage
+
+        self.preproc_valid = preproc_valid
         
         metadata = pd.read_csv(self.metadata_csv, sep = ',', index_col=False)
         self.files = self.get_samples(metadata)
@@ -109,6 +112,10 @@ class BaseDataset(data.Dataset):
             y_offset = 0
         image = image[x_offset:(self.crop_size[1]+x_offset), y_offset:(self.crop_size[0]+y_offset)]
         label = label[x_offset:(self.crop_size[1]+x_offset), y_offset:(self.crop_size[0]+y_offset)]
+
+        if self.preproc_valid:
+            cv2.imwrite('/home/raluca/data/NYUv2/preproc_valid/images/'+name+".png",image)
+            cv2.imwrite('/home/raluca/data/NYUv2/preproc_valid/labels/'+name+".png",label)
 
 
         size = image.shape

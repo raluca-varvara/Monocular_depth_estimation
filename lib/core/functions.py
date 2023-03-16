@@ -15,7 +15,8 @@ from torch.nn import functional as F
 
 from utils.utils import adjust_learning_rate
 from utils.utils import AverageMeter
-from metrics import evaluate_depth_metrics
+from core.metrics import evaluate_depth_metrics
+
 
 
 
@@ -32,7 +33,6 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr, num_iters,
     global_steps = writer_dict['train_global_steps']
 
     for i_iter, batch in enumerate(trainloader):
-        print(i_iter)
         images, labels, _, _ = batch
         images = images.to(device)
         labels = torch.unsqueeze(labels, 1)
@@ -45,7 +45,6 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr, num_iters,
         ###################
         # WILL ONLY WORK ON ONLY 1 GPU, otherwise => implement reduce tensor
         ##################
-        print(i_iter)
 
         model.zero_grad()
         loss.backward()
@@ -75,10 +74,10 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr, num_iters,
             writer.add_scalar('train_loss', print_loss, global_steps)
             writer_dict['train_global_steps'] = global_steps + 1
 
-def validate(config, testloader, model, writer_dict, classes, device):
+def validate(config, testloader, model, writer_dict, device):
     
     #if multigpu get world size and get rank
-
+    print("VALIDATION")
     model.eval()
     ave_loss = AverageMeter()
     ave_mse = AverageMeter()
@@ -91,14 +90,15 @@ def validate(config, testloader, model, writer_dict, classes, device):
     with torch.no_grad():
         
         for _, batch in enumerate(testloader):
-            image, label, _, _ = batch
-            size = label.size()
-            image = image.to(device)
-            label = label.long().to(device)
+            images, labels, _, _ = batch
+            size = labels.size()
+            images = images.to(device)
+            labels = torch.unsqueeze(labels, 1)
+            labels = labels.to(device)
 
-            losses, pred = model(image, label)
+            losses, pred = model(images, labels)
             loss = losses.mean()
-            mse, mae, abs_rel, delta1, delta2, delta3 = evaluate_depth_metrics(pred, label)
+            mse, mae, abs_rel, delta1, delta2, delta3 = evaluate_depth_metrics(pred, labels)
             # reduce loss if multi gpu => TODO: implement reduce tensor, get world size 
             reduced_loss = loss
             ave_loss.update(reduced_loss.item())

@@ -14,6 +14,7 @@ _C.GPUS = (0,)
 _C.WORKERS = 1
 _C.PRINT_FREQ = 20
 _C.AUTO_RESUME = False
+_C.SAVE_TOP_K = 3
 # _C.PIN_MEMORY = True
 # _C.RANK = 0
 
@@ -67,6 +68,7 @@ _C.TRAIN.BATCH_SIZE_PER_GPU = 32
 _C.TRAIN.SHUFFLE = True
 # only using some training samples
 _C.TRAIN.NUM_SAMPLES = 0
+_C.TRAIN.MINI_SET= False
 
 # testing
 _C.TEST = CN()

@@ -13,10 +13,12 @@ import yaml
 import logging
 import time
 import timeit
+import random
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from operator import itemgetter
 
 import torch
 import torch.nn as nn
@@ -34,9 +36,14 @@ from core.criterion import DepthLoss
 from core.functions import train, validate
 from utils.utils import FullModel, create_logger
 
-DATASET_CFG = '/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/config_files/dataset_config.yaml'
-MODEL_CFG = '/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/config_files/model_config.yaml'
-TRAINING_CFG = '/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/config_files/training_config.yaml'
+torch.manual_seed(0)
+random.seed(0)
+np.random.seed(0)
+
+
+DATASET_CFG = 'config_files/dataset_config.yaml'
+MODEL_CFG = 'config_files/model_config.yaml'
+TRAINING_CFG = 'config_files/training_config.yaml'
 
 SEP = "########################################################################################"
 
@@ -79,6 +86,7 @@ def main():
     print(distributed)
     print(SEP)
     device = torch.device('cuda:{}'.format(args.gpuid))
+    print("Device: ",device)
     print(f"Training started on GPU: {args.gpuid}")
     print(SEP)
 
@@ -91,20 +99,25 @@ def main():
             yaml.dump(config.dump(), outfile)
 
 
-    train_dataset = BaseDataset(root = '/Users/varvararaluca/Documents/Datasets/nyu_data/',
+    train_dataset = BaseDataset(root = config.DATASET.ROOT,
+                                mini_train = config.TRAIN.MINI_SET,
+                                num_samples= None,
+                                stage = 'train',
                                 list_path = 'metadata.csv',
                                 base_size = config.TRAIN.BASE_SIZE,
                                 crop_size= config.TRAIN.IMAGE_SIZE,
                                 multiscale = config.TRAIN.MULTI_SCALE,
                                 multiscale_factor = config.TRAIN.MULTI_SCALE_FACTOR)
     
-    val_dataset = BaseDataset(root = '/Users/varvararaluca/Documents/Datasets/nyu_data/',
+    val_dataset = BaseDataset(root = config.DATASET.ROOT,
                                 list_path = 'metadata.csv',
                                 stage = 'val',
+                                num_samples = None,
                                 base_size = config.TRAIN.BASE_SIZE,
                                 crop_size= config.TRAIN.IMAGE_SIZE,
                                 multiscale = config.TRAIN.MULTI_SCALE,
                                 multiscale_factor = config.TRAIN.MULTI_SCALE_FACTOR)
+                                
     trainloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.TRAIN.BATCH_SIZE_PER_GPU,
@@ -146,8 +159,6 @@ def main():
     
     criterion = DepthLoss()
     model = FullModel(model, criterion)
-
-    device = torch.device('cpu')
     model = model.to(device)
 
 
@@ -193,15 +204,15 @@ def main():
         # checkpointing
         model_state_dict = model.module.state_dict() if distributed else model.state_dict()
 
-        if len(best_checkpoints) < config.SAVE_TOP_K or valid_loss > best_checkpoints[-1]["valid_loss"]:
-            checkpoint_path = os.path.join(checkpoints_dir, f'epoch_{epoch + 1}_loss_{valid_loss:0.3f}.pth')
+        if len(best_checkpoints) < config.SAVE_TOP_K or valid_delta1 > best_checkpoints[-1]["valid_delta1"]:
+            checkpoint_path = os.path.join(checkpoints_dir, f'epoch_{epoch + 1}_loss_{valid_loss:0.3f}_delta1_{valid_delta:0.3f}.pth')
             torch.save(model_state_dict, checkpoint_path)
             logger.info(f'=> saving top {config.SAVE_TOP_K} checkpoint to {checkpoint_path}')
             
-            best_checkpoints.append({'valid_loss': valid_loss, 'path': checkpoint_path})
-            best_checkpoints = sorted(best_checkpoints, key=itemgetter('mean_IoU'), reverse=True) # best model first
+            best_checkpoints.append({'valid_loss': valid_loss, 'valid_delta1':valid_delta1, 'path': checkpoint_path})
+            best_checkpoints = sorted(best_checkpoints, key=itemgetter('valid_delta1'), reverse=True) # best model first
         else:
-            logger.info(f'=> Checkpoint not in top {config.SAVE_TOP_K}.')
+            logger.info(f'=> Checkpoint not in top delta1 {config.SAVE_TOP_K}.')
 
         if len(best_checkpoints) > config.SAVE_TOP_K:
             outdated_checkpoint = best_checkpoints.pop()
@@ -230,8 +241,8 @@ def main():
         logging.info('Validation Results:')
         logging.info(SEP)
 
-        msg = 'Loss: {:.3f}, Best_loss: {: 4.4f}\nMSE: {: 4.4f}, MAE:{: 4.4f}, ABS REL:{: 4.4f} , delta1:{: 4.4f} , delta2:{: 4.4f} , delta3:{: 4.4f}'.format(
-                valid_loss,  best_checkpoints[0]["valid_loss"], valid_mse, valid_mae, valid_abs_rel, valid_delta1, valid_delta2, valid_delta3)
+        msg = 'Loss: {:.3f}, Best_delta1: {: 4.4f}\nMSE: {: 4.4f}, MAE:{: 4.4f}, ABS REL:{: 4.4f} , delta1:{: 4.4f} , delta2:{: 4.4f} , delta3:{: 4.4f}'.format(
+                valid_loss,  best_checkpoints[0]["valid_delta1"], valid_mse, valid_mae, valid_abs_rel, valid_delta1, valid_delta2, valid_delta3)
         logging.info(msg)
 
 

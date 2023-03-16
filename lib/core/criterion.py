@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from torchmetrics.functional import image_gradients
 from torchmetrics.functional import structural_similarity_index_measure
 
-def depth_loss_function(y_true, y_pred, theta=0.1, maxDepthVal=1000.0/10.0):
+def depth_loss_function(y_true, y_pred, theta=0.2, maxDepthVal=1000.0/10.0):
   
   # Point-wise depth
   l_depth = torch.mean(torch.abs(y_pred - y_true), axis=-1)
