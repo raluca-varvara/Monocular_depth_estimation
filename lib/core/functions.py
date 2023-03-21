@@ -17,6 +17,9 @@ from utils.utils import adjust_learning_rate
 from utils.utils import AverageMeter
 from core.metrics import evaluate_depth_metrics
 
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
 
 
 
@@ -57,11 +60,11 @@ def train(config, epoch, num_epoch, epoch_iters, base_lr, num_iters,
         # update average loss
         ave_loss.update(reduced_loss.item())
 
-        lr = adjust_learning_rate(optimizer,
-                                  base_lr,
-                                  num_iters,
-                                  i_iter+cur_iters)
-        
+        # lr = adjust_learning_rate(optimizer,
+        #                           base_lr,
+        #                           num_iters,
+        #                           i_iter+cur_iters)
+        lr = get_lr(optimizer)
         if i_iter % config.PRINT_FREQ == 0:
             print_loss = ave_loss.average()
             msg = 'Epoch: [{}/{}] Iter:[{}/{}], Time: {:.2f}, ' \
@@ -86,6 +89,7 @@ def validate(config, testloader, model, writer_dict, device):
     ave_delta1 = AverageMeter()
     ave_delta2 = AverageMeter()
     ave_delta3 = AverageMeter()
+    ave_log10 = AverageMeter()
 
     with torch.no_grad():
         
@@ -98,7 +102,7 @@ def validate(config, testloader, model, writer_dict, device):
 
             losses, pred = model(images, labels)
             loss = losses.mean()
-            mse, mae, abs_rel, delta1, delta2, delta3 = evaluate_depth_metrics(pred, labels)
+            mse, mae, abs_rel, delta1, delta2, delta3, log10 = evaluate_depth_metrics(pred, labels)
             # reduce loss if multi gpu => TODO: implement reduce tensor, get world size 
             reduced_loss = loss
             ave_loss.update(reduced_loss.item())
@@ -108,6 +112,7 @@ def validate(config, testloader, model, writer_dict, device):
             ave_delta1.update(delta1)
             ave_delta2.update(delta2)
             ave_delta3.update(delta3)
+            ave_log10.update(log10)
 
     print_loss = ave_loss.average() # /world_size
     print_mse = ave_mse.average()
@@ -116,6 +121,7 @@ def validate(config, testloader, model, writer_dict, device):
     print_delta1 = ave_delta1.average()
     print_delta2 = ave_delta1.average()
     print_delta3 = ave_delta3.average()
+    print_log10 = ave_log10.average()
     # if rank == 0: 
     writer = writer_dict['writer']
     global_steps = writer_dict['valid_global_steps']
@@ -126,5 +132,6 @@ def validate(config, testloader, model, writer_dict, device):
     writer.add_scalar('valid_delta1', print_delta1, global_steps)
     writer.add_scalar('valid_delta2', print_delta2, global_steps)
     writer.add_scalar('valid_delta3', print_delta3, global_steps)
+    writer.add_scalar('valid_log10', print_log10, global_steps)
     writer_dict['valid_global_steps'] = global_steps + 1
-    return print_loss, print_mse, print_mae, print_abs_rel, print_delta1, print_delta2, print_delta3
+    return print_loss, print_mse, print_mae, print_abs_rel, print_delta1, print_delta2, print_delta3, print_log10

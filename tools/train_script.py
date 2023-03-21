@@ -194,7 +194,7 @@ def main():
                   device)
 
         # validation
-        valid_loss, valid_mse, valid_mae, valid_abs_rel, valid_delta1, valid_delta2, valid_delta3 = validate(config, 
+        valid_loss, valid_mse, valid_mae, valid_abs_rel, valid_delta1, valid_delta2, valid_delta3, valid_log10 = validate(config, 
                     valloader, model, writer_dict, device)
         
 
@@ -205,7 +205,7 @@ def main():
         model_state_dict = model.module.state_dict() if distributed else model.state_dict()
 
         if len(best_checkpoints) < config.SAVE_TOP_K or valid_delta1 > best_checkpoints[-1]["valid_delta1"]:
-            checkpoint_path = os.path.join(checkpoints_dir, f'epoch_{epoch + 1}_loss_{valid_loss:0.3f}_delta1_{valid_delta:0.3f}.pth')
+            checkpoint_path = os.path.join(checkpoints_dir, f'epoch_{epoch + 1}_loss_{valid_loss:0.3f}_delta1_{valid_delta1:0.3f}.pth')
             torch.save(model_state_dict, checkpoint_path)
             logger.info(f'=> saving top {config.SAVE_TOP_K} checkpoint to {checkpoint_path}')
             
@@ -241,8 +241,8 @@ def main():
         logging.info('Validation Results:')
         logging.info(SEP)
 
-        msg = 'Loss: {:.3f}, Best_delta1: {: 4.4f}\nMSE: {: 4.4f}, MAE:{: 4.4f}, ABS REL:{: 4.4f} , delta1:{: 4.4f} , delta2:{: 4.4f} , delta3:{: 4.4f}'.format(
-                valid_loss,  best_checkpoints[0]["valid_delta1"], valid_mse, valid_mae, valid_abs_rel, valid_delta1, valid_delta2, valid_delta3)
+        msg = 'Loss: {:.3f}, Best_delta1: {: 4.4f}\nMSE: {: 4.4f}, MAE:{: 4.4f}, ABS REL:{: 4.4f} , delta1:{: 4.4f} , delta2:{: 4.4f} , delta3:{: 4.4f}, log10:{: 4.4f}'.format(
+                valid_loss,  best_checkpoints[0]["valid_delta1"], valid_mse, valid_mae, valid_abs_rel, valid_delta1, valid_delta2, valid_delta3, valid_log10)
         logging.info(msg)
 
 

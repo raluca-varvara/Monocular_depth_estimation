@@ -137,9 +137,9 @@ class BaseDataset(data.Dataset):
 
     def label_transform(self, label):
         label = label.astype(np.float32)
-        label = label / 255.0
-        label -= self.mean_depth
-        label /= self.std_depth
+        label = label / 255.0 # normalize just between 0 - 1 i have batch norm at the begining so that does the actual norm
+        # label -= self.mean_depth
+        # label /= self.std_depth
         return label
     
     

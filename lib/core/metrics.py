@@ -11,6 +11,9 @@ def evaluate_depth_metrics(output, target):
     valid_mask = target>0
     output = output[valid_mask]
     target = target[valid_mask]
+
+    output[output == 0] = 1e-15
+    target[target == 0] = 1e-15
     # calc diff
     diff_matrix = torch.abs(output - target)
 
@@ -37,7 +40,7 @@ def evaluate_depth_metrics(output, target):
     delta3 = torch.mean(
         torch.le(max_ratio, math.pow(1.25, 3)).float(), axis = -1) 
 
-    return float(mse.data.cpu().numpy()), float(mae.data.cpu().numpy()), float(abs_rel.data.cpu().numpy()), float(delta1.data.cpu().numpy()), float(delta2.data.cpu().numpy()), float(delta3.data.cpu().numpy())
+    return float(mse.data.cpu().numpy()), float(mae.data.cpu().numpy()), float(abs_rel.data.cpu().numpy()), float(delta1.data.cpu().numpy()), float(delta2.data.cpu().numpy()), float(delta3.data.cpu().numpy()), float(lg10.data.cpu().numpy())
     
 
 if __name__ == '__main__':
