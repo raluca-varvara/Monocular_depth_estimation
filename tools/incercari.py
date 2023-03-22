@@ -29,13 +29,15 @@ from config import config
 from config import update_config
 from dataset import BaseDataset
 from unet import UNet
+from unet import ResNet50, Lateral, DepthModel
 from core.criterion import DepthLoss
 from core.functions import train, validate
 from utils.utils import FullModel
 
-dataset_config_file_path = '/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/config_files/dataset_config.yaml'
-model_config_file_path = '/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/config_files/model.config.yaml'
-training_config_file_path = '/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/config_files/training_config.yaml'
+dataset_config_file_path = 'config_files/dataset_config.yaml'
+model_config_file_path = 'config_files/model_config.yaml'
+training_config_file_path = 'config_files/training_config.yaml'
+
 
 def parse_args():
     update_config(config, model_config_file_path, dataset_config_file_path, training_config_file_path)
@@ -46,13 +48,13 @@ def main():
 
 
     writer_dict = {
-        'writer': SummaryWriter("/Users/varvararaluca/Documents/Facultate/LICENTA/UNET_monocular_depth_estimation/outputs/tensorboards"),
+        'writer': SummaryWriter("/home/raluca/Monocular_depth_estimation/log/incercari"),
         'train_global_steps': 0,
         'valid_global_steps': 0,
     }
 
 
-    train_dataset = BaseDataset(root = '/Users/varvararaluca/Documents/Datasets/nyu_data/',
+    train_dataset = BaseDataset(root = '/home/raluca/data/NYUv2/',
                                 list_path = 'metadata.csv',
                                 base_size = config.TRAIN.BASE_SIZE,
                                 crop_size= config.TRAIN.IMAGE_SIZE,
@@ -67,7 +69,18 @@ def main():
         pin_memory=True,
         drop_last=True,
         )
-    print(len(trainloader))
+    model = ResNet50()
+
+    model = Lateral(ResNet50, (480,640))
+    model = DepthModel((480,640))
+    for i, batch in enumerate(trainloader):
+        images, labels, _, _ = batch
+        out_logit, out_softmax = model(images)
+
+        print(out_logit)
+
+        break
+
 
 
 if __name__ == '__main__':
