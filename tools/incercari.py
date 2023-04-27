@@ -23,6 +23,7 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 from torch.utils.data.distributed import DistributedSampler
 from tensorboardX import SummaryWriter
+from torchsummary import summary
 
 import _init_paths
 from config import config
@@ -73,13 +74,14 @@ def main():
 
     model = Lateral(ResNet50, (480,640))
     model = DepthModel((480,640))
-    for i, batch in enumerate(trainloader):
-        images, labels, _, _ = batch
-        out_logit, out_softmax = model(images)
+    summary(model, (3,480,640))
+    # for i, batch in enumerate(trainloader):
+    #     images, labels, _, _ = batch
+    #     out_logit, out_softmax = model(images)
 
-        print(out_logit)
+    #     print(out_logit)
 
-        break
+    #     break
 
 
 

@@ -9,22 +9,20 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 import cv2
-
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
-device      = torch.device('cpu') 
+device = torch.device('cpu') 
 num_workers = 4
-batch_size  = 128
+batch_size = 128
 
-data_path = '/Users/varvararaluca/Documents/Datasets/nyu_data/'
+data_path = '/home/raluca/data/NYUv2/'
 
-height = 484
-width = 840
+height = 480
+width = 640
 
 def get_train_file_path(image_path):
-    
     return data_path + image_path
 
 class ImageData(Dataset):
@@ -42,7 +40,8 @@ class ImageData(Dataset):
         
         # import
         file_path = self.file_paths[idx]        
-        image     = cv2.imread(file_path, cv2.IMREAD_COLOR) 
+        image     = cv2.imread(file_path, -1) 
+        print(file_path, image.dtype)
         if image is None:
             raise FileNotFoundError(file_path)
             
@@ -56,29 +55,30 @@ if __name__ == '__main__':
 
     df = pd.read_csv(data_path + 'metadata.csv')
     df['file_path'] = df['label_path'].apply(get_train_file_path)
-
-    augs = A.Compose([A.Resize(height  = height, 
-                           width   = width),
-                  A.Normalize(mean = (0), 
-                              std  = (1)),
-                  ToTensorV2()])
+    print(df['file_path'])
+    # augs = A.Compose([A.Resize(height  = height, 
+    #                        width   = width),
+    #               A.Normalize(mean = (0), 
+    #                           std  = (1)),
+    #               ToTensorV2()])
     # dataset
-    image_dataset = ImageData(df        = df, 
-                            transform = augs)
+    image_dataset = ImageData(df = df, 
+                            transform = None)
 
     # data loader
     image_loader = DataLoader(image_dataset, 
-                            batch_size  = batch_size, 
-                            shuffle     = False, 
+                            batch_size = batch_size, 
+                            shuffle = False, 
                             num_workers = num_workers)
-    psum    = torch.tensor([0.0, 0.0, 0.0])
-    psum_sq = torch.tensor([0.0, 0.0, 0.0])
+    psum    = torch.tensor(0.0)
+    psum_sq = torch.tensor(0.0)
 
     # loop through images
     for inputs in tqdm(image_loader):
-        # print(inputs.shape)
-        psum    += inputs.sum(axis        = [0, 2, 3])
-        psum_sq += (inputs ** 2).sum(axis = [0, 2, 3])
+        # print(inputs)
+        psum    += inputs.sum()
+        psum_sq += (inputs ** 2).sum()
+        
     
     count = len(df) * height * width
 

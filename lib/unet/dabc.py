@@ -180,7 +180,7 @@ class FCN_topdown(nn.Module):
         super().__init__()
 
         self.dim_in = [512, 256, 256, 256, 256, 256]
-        self.dim_out = [256, 256, 256, 256, 256, 150]
+        self.dim_out = [256, 256, 256, 256, 256, 1]
         self.num_fcn_topdown = len(self.dim_in)
         self.top = nn.Sequential(
             nn.Conv2d(self.dim_in[0] , self.dim_in[0], 1, stride=1, padding=0, bias=False),

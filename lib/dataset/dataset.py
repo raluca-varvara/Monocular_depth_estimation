@@ -24,8 +24,8 @@ class BaseDataset(data.Dataset):
                  std=[0.288, 0.294, 0.307],
                  mean_depth=[0.287], 
                  std_depth=[0.154],
-                 random_flip = True,
-                 multiscale=True,
+                 random_flip = False,
+                 multiscale=False,
                  multiscale_factor=1.5,
                  preproc_valid = False):
 
@@ -83,8 +83,11 @@ class BaseDataset(data.Dataset):
 
         image = cv2.imread(self.root + item["img"],
                            cv2.IMREAD_COLOR)
+        image_test = image.copy() 
+        # label = cv2.imread(self.root + item["label"],
+        #                    cv2.IMREAD_GRAYSCALE)
         label = cv2.imread(self.root + item["label"],
-                           cv2.IMREAD_GRAYSCALE)
+                           -1)
         
         # Randomly flip the images horizontally
         if self.random_flip and np.random.random() > 0.5:
@@ -124,8 +127,10 @@ class BaseDataset(data.Dataset):
         label = self.label_transform(label)
 
         image = image.transpose((2, 0, 1))
-
-        return image.copy(), label.copy(), np.array(size), name
+        if self.stage == 'test':
+            return image.copy(), label.copy(), np.array(size), name, image_test.copy()
+        else:
+            return image.copy(), label.copy(), np.array(size), name
 
     def input_transform(self, image):
 
@@ -136,7 +141,7 @@ class BaseDataset(data.Dataset):
         return image
 
     def label_transform(self, label):
-        label = label.astype(np.float32)
+        label = label.astype(np.float64)
         label = label / 255.0 # normalize just between 0 - 1 i have batch norm at the begining so that does the actual norm
         # label -= self.mean_depth
         # label /= self.std_depth

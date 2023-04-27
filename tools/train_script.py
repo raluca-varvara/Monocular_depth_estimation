@@ -32,6 +32,7 @@ from config import config
 from config import update_config
 from dataset import BaseDataset
 from unet import UNet
+from unet import ResNet50, Lateral, DepthModel
 from core.criterion import DepthLoss
 from core.functions import train, validate
 from utils.utils import FullModel, create_logger
@@ -136,6 +137,7 @@ def main():
         )
 
     model = UNet(n_channels = 3)
+    model = DepthModel((480,640))
 
     if config.TRAIN.OPTIMIZER == 'sgd':
         optimizer = torch.optim.SGD([{'params':

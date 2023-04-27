@@ -3,11 +3,12 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torchmetrics.functional import image_gradients
 from torchmetrics.functional import structural_similarity_index_measure
+from core.vnl_loss import VNL
 
 def depth_loss_function(y_true, y_pred, theta=0.2, maxDepthVal=1000.0/10.0):
   
   # Point-wise depth
-  l_depth = torch.mean(torch.abs(y_pred - y_true), axis=-1)
+  loss_depth = torch.mean(torch.abs(y_pred - y_true), axis=-1)
 
   # Edges
   dy_true, dx_true = image_gradients(y_true)
@@ -16,22 +17,24 @@ def depth_loss_function(y_true, y_pred, theta=0.2, maxDepthVal=1000.0/10.0):
 
   # Structural similarity (SSIM) index
   l_ssim = torch.clip((1 - structural_similarity_index_measure(y_true, y_pred, data_range = maxDepthVal)) * 0.5, 0, 1) 
+  
+  # Virtual Normal Loss
+  vnl_loss = VNL(y_true.shape) 
 
   # Weights
-  w1 = 1.0
+  w1 = 0.1
   w2 = 1.0
-  w3 = theta
-  return  (w3 * torch.mean(l_depth)) + (w1 * l_ssim) + (w2 * torch.mean(l_edges))  
+  w3 = 10.0
+  w4 = 10.0
+  # modified
 
-def depth_acc(y_true, y_pred):
-  return 1.0 - depth_loss_function(y_true, y_pred)
-
+  return  (w1 * torch.mean(loss_depth))  + (w2 * torch.mean(l_edges)) + (w3 * l_ssim)  + (w4 * vnl_loss(y_true,y_pred)), w1*torch.mean(loss_depth),  w2*torch.mean(l_edges), w3*l_ssim, w4*vnl_loss(y_true,y_pred)
 
 class DepthLoss(nn.Module):
     def __init__(self):
-        super(DepthLoss, self).__init__()        
+        super(DepthLoss, self).__init__()            
 
     def forward(self, score, target):
-        loss = depth_loss_function(target, score)
+        loss, l_depth, l_edges, l_ssim, l_vnl = depth_loss_function(target, score)
 
-        return loss
+        return loss, l_depth, l_edges, l_ssim, l_vnl

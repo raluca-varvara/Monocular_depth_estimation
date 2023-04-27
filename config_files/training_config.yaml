@@ -18,7 +18,7 @@ TRAIN:
   BATCH_SIZE_PER_GPU: 4
   SHUFFLE: true
   BEGIN_EPOCH: 0
-  END_EPOCH: 400
+  END_EPOCH: 600
   RESUME: true
   OPTIMIZER: adam
   LR: 0.001
@@ -37,4 +37,4 @@ TEST:
   BASE_SIZE: 640
   BATCH_SIZE_PER_GPU: 1
 
-  MODEL_FILE: ""
+  MODEL_FILE: "/home/raluca/Monocular_depth_estimation/log/unet_monocular/first_try/v.8/checkpoints/epoch_161_loss_0.006_delta1_0.971.pth"

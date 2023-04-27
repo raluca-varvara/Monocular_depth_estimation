@@ -55,9 +55,9 @@ class FullModel(nn.Module):
         self.model = model
         self.loss = loss
     def forward(self, inputs, labels):
-        outputs = self.model(inputs)
-        loss = self.loss(outputs, labels)
-        return torch.unsqueeze(loss, 0), outputs
+        outputs, outputs_softmax = self.model(inputs)
+        loss, l_depth, l_edges, l_ssim, l_vnl = self.loss(outputs, labels)
+        return torch.unsqueeze(loss, 0), outputs, l_depth, l_edges, l_ssim, l_vnl
 
 def create_logger(cfg, cfg_name, experiment_name, phase='train'):
     root_output_dir = Path(cfg.OUTPUT_DIR)
