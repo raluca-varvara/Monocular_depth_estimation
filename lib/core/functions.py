@@ -153,7 +153,7 @@ def validate(config, testloader, model, writer_dict, device):
     writer_dict['valid_global_steps'] = global_steps + 1
     return print_loss, print_mse, print_mae, print_abs_rel, print_delta1, print_delta2, print_delta3, print_log10
 
-def test(config, testloader, model, sv_dir=''):
+def test(config, testloader, model, device, sv_dir=''):
 
     model.eval()
 
@@ -167,12 +167,13 @@ def test(config, testloader, model, sv_dir=''):
     ave_log10 = AverageMeter()
 
     with torch.no_grad():
+        start_time = time.time()
         for _, batch in enumerate(tqdm(testloader)):
             image, label, size, name, image_true = batch
-
+            image = image.to(device)
             label = torch.unsqueeze(label, 1)
             size = size[0]
-
+            label = label.to(device)
             loss, pred, l_depth, l_edges, l_ssim, l_vnl = model(image, label)
             mse, mae, abs_rel, delta1, delta2, delta3, log10 = evaluate_depth_metrics(pred, label)
             # reduce loss if multi gpu => TODO: implement reduce tensor, get world size 
@@ -188,26 +189,29 @@ def test(config, testloader, model, sv_dir=''):
             ave_log10.update(log10)
 
             pred = torch.squeeze(pred)
-            print("#####################################################")
-            print("#####################################################")
+            # print("#####################################################")
+            # print("#####################################################")
             tensor = pred*255
-            print(tensor.type(torch.int8))
+            # print(tensor.type(torch.int8))
             
-            print("#####################################################")
-            print("#####################################################")
+            # print("#####################################################")
+            # print("#####################################################")
 
+            if sv_dir != '':
+                sv_path = str(sv_dir / "predictions") + '/' + name[0] + ".png"
+                tensor  = tensor.cpu().numpy() # make sure tensor is on cpu
+                cv2.imwrite(sv_path,tensor)
 
-            sv_path = str(sv_dir / "predictions") + '/' + name[0] + ".png"
-            tensor  = tensor.cpu().numpy() # make sure tensor is on cpu
-            cv2.imwrite(sv_path,tensor)
-
-            sv_path = str(sv_dir / "images") + '/' + name[0] + ".png"
-            image_true = torch.squeeze(image_true)
-            image_true  = image_true.cpu().numpy()
-            cv2.imwrite(sv_path, image_true)
+                sv_path = str(sv_dir / "images") + '/' + name[0] + ".png"
+                image_true = torch.squeeze(image_true)
+                image_true  = image_true.cpu().numpy()
+                cv2.imwrite(sv_path, image_true)
 
             # test_dataset.save_pred(pred, sv_path, name)
 
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print("INFERENCE TIME: ", elapsed_time/len(testloader))
         print_loss = ave_loss.average() 
         print_mse = ave_mse.average()
         print_mae = ave_mae.average()

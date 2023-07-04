@@ -16,6 +16,7 @@ import timeit
 import random
 from pathlib import Path
 
+import cv2
 import numpy as np
 import pandas as pd
 from operator import itemgetter
@@ -80,8 +81,7 @@ def main():
     model_test_images.mkdir(parents=True, exist_ok=True)
     model_test_predictions.mkdir(parents=True, exist_ok=True)
 
-    # device = torch.device('cpu')
-    device = torch.device('cuda:{}'.format(0))
+    device = torch.device('cpu')
 
     # cudnn related setting
     cudnn.benchmark = config.CUDNN.BENCHMARK
@@ -89,11 +89,10 @@ def main():
     cudnn.enabled = config.CUDNN.ENABLED
 
     # build model
-    # model = DepthModel((480,640))
-    model = UNet(n_channels = 3)
+    model = DepthModel((550,764))
+    # model = UNet(n_channels = 3)
     criterion = DepthLoss(device)
     model = FullModel(model, criterion)
-    model = model.to(device)
 
     dump_input = torch.rand(
         (1, 3, config.TEST.IMAGE_SIZE[1], config.TEST.IMAGE_SIZE[0])
@@ -109,52 +108,22 @@ def main():
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
 
-    # gpus = list(config.GPUS)
-    # model = nn.DataParallel(model, device_ids=gpus).cuda()
-    test_dataset = BaseDataset(root = config.DATASET.ROOT,
-                            list_path = 'metadata.csv',
-                            stage = 'test',
-                            num_samples = 20,
-                            base_size = config.TEST.BASE_SIZE,
-                            crop_size= config.TEST.IMAGE_SIZE)
-    testloader = torch.utils.data.DataLoader(
-        test_dataset,
-        batch_size=config.TEST.BATCH_SIZE_PER_GPU,
-        num_workers=config.WORKERS,
-        pin_memory=True,
-        drop_last=True,
-    )
+    model.eval()
 
-    # test_loss, test_mse, test_mae, test_abs_rel, test_delta1, test_delta2, test_delta3, test_log10 = test(config, testloader, model, model_test_dir)
-    test_loss, test_mse, test_mae, test_abs_rel, test_delta1, test_delta2, test_delta3, test_log10 = test(config, testloader, model, device)
+    image = cv2.imread('/home/raluca/Monocular_depth_estimation/paintings/painting1.png',cv2.IMREAD_COLOR)
 
-    # start = timeit.default_timer()
-    # #if 'val' in config.DATASET.TEST_SET:
-    # mean_IoU, IoU_array, pixel_acc, mean_acc = testval(config, 
-    #                                                        test_dataset, 
-    #                                                        testloader, 
-    #                                                        model,
-    #                                                        sv_dir=final_output_dir,
-    #                                                        sv_pred = False)
-    
-    # msg = 'MeanIU: {: 4.4f}, Pixel_Acc: {: 4.4f}, \
-    #         Mean_Acc: {: 4.4f}, Class IoU: '.format(mean_IoU, 
-    #         pixel_acc, mean_acc)
-    # logging.info(msg)
-    # logging.info(IoU_array)
-    
-    # end = timeit.default_timer()
-    # #elif 'test' in config.DATASET.TEST_SET:
-    # # test(config, 
-    # #          test_dataset, 
-    # #          testloader, 
-    # #          model,
-    # #          sv_dir=final_output_dir)
-
-    
-    # logger.info('Mins: %d' % np.int((end-start)/60))
-    # logger.info('Done')
-
+    image = image.astype(np.float32)[:, :, ::-1]
+    image = image / 255.0
+    image -= [0.487, 0.417, 0.400]
+    image /= [0.288, 0.294, 0.307]
+    image = image.transpose((2, 0, 1))
+    image = image[None, :, :, :]
+    image = torch.from_numpy(image)
+    with torch.no_grad():
+        depth_or, depth_softmax = model.model(image)
+        depth = torch.squeeze(depth_or).cpu().numpy()
+        depth = depth * 255
+    cv2.imwrite('/home/raluca/Monocular_depth_estimation/paintings/depth_painting1.png', depth)
 
 if __name__ == '__main__':
     main()

@@ -29,7 +29,7 @@ TRAIN:
   MULTI_SCALE: false
   MULTI_SCALE_FACTOR: 1.5
   IGNORE_LABEL: 255
-  MINI_SET: true
+  MINI_SET: false
 TEST:
   IMAGE_SIZE:
   - 640
@@ -37,4 +37,4 @@ TEST:
   BASE_SIZE: 640
   BATCH_SIZE_PER_GPU: 1
 
-  MODEL_FILE: "/home/raluca/Monocular_depth_estimation/log/unet_monocular/first_try/v.8/checkpoints/epoch_161_loss_0.006_delta1_0.971.pth"
+  MODEL_FILE: "/home/raluca/Monocular_depth_estimation/log/unet_monocular/first_try/v.5/checkpoints/epoch_372_loss_0.009_delta1_0.930.pth"

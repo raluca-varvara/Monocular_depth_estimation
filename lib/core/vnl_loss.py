@@ -6,7 +6,7 @@ import cv2
 
 class VNL(nn.Module):
 
-    def __init__(self, input_size,
+    def __init__(self, input_size, device,
                  delta_cos=0.867, delta_diff_x=0.01,
                  delta_diff_y=0.01, delta_diff_z=0.01,
                  delta_z=0.0001, sample_ratio=0.15):
@@ -16,6 +16,7 @@ class VNL(nn.Module):
         self.u0 = np.array(input_size[3] // 2, dtype=np.float32)
         self.v0 = np.array(input_size[2] // 2, dtype=np.float32)
         self.batch_size = input_size[0]
+        self.device = device
         self.init_image_coor()
         self.delta_cos = delta_cos
         self.delta_diff_x = delta_diff_x
@@ -23,6 +24,7 @@ class VNL(nn.Module):
         self.delta_diff_z = delta_diff_z
         self.delta_z = delta_z
         self.sample_ratio = sample_ratio
+        
 
     def init_image_coor(self):
 
@@ -32,7 +34,7 @@ class VNL(nn.Module):
         x = x.astype(np.float32)
         u_u0 = x - self.u0
         u_u0 = u_u0[np.newaxis, :, :, :]
-        self.u_u0 = torch.from_numpy(np.repeat(u_u0, self.batch_size, axis=0)).cuda()
+        self.u_u0 = torch.from_numpy(np.repeat(u_u0, self.batch_size, axis=0)).to(self.device)
 
         y_col = np.arange(0, self.input_size[0]) 
         y = np.tile(y_col, (self.input_size[1], 1)).T
@@ -40,7 +42,7 @@ class VNL(nn.Module):
         y = y.astype(np.float32)
         v_v0 = y - self.v0
         v_v0 = v_v0[np.newaxis, :, :, :]
-        self.v_v0 = torch.from_numpy(np.repeat(v_v0, self.batch_size, axis=0)).cuda()
+        self.v_v0 = torch.from_numpy(np.repeat(v_v0, self.batch_size, axis=0)).to(self.device)
 
     def transfer_xyz(self, depth):
 

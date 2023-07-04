@@ -159,7 +159,7 @@ def main():
         raise ValueError('Only Support SGD or ADAM optimizer')
 
     
-    criterion = DepthLoss()
+    criterion = DepthLoss(device)
     model = FullModel(model, criterion)
     model = model.to(device)
 
